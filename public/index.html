@@ -117,8 +117,9 @@ textarea:focus {
     <h1>Live Shared Notepad</h1>
     <button id="addNotepadBtn">Notepad</button>
 
-    <div id="notepadContainer" style="width: 100%; max-width: 95%;"></div>
-
+    <main>
+        <div id="notepadContainer" style="width: 100%; max-width: 95%;"></div> <!-- Responsive container width -->
+    </main>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const notepadContainer = document.getElementById('notepadContainer');
