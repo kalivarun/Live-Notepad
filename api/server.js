@@ -1,29 +1,15 @@
-// server.js
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+// api/notepad.js
 const fs = require('fs');
 const path = require('path');
+const { Server } = require('socket.io');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-const cors = require('cors');
-
-// Add this line before your app.use() calls
-app.use(cors({ origin: 'https://livenotepad1.vercel.app' }));
-
-// Initialize notes as an empty object
 let notes = {};
 
-// Serve static files from the "public" directory, relative to where server.js is located
-app.use(express.static(path.join(__dirname, '../public')));  // Adjusted to go up one directory level
-
-// Load existing notes from file
+// Load existing notes from file (ensure this file exists)
 const loadNotes = () => {
     try {
-        if (fs.existsSync('notes.json')) {
-            const data = fs.readFileSync('notes.json', 'utf8');
+        if (fs.existsSync(path.join(__dirname, '../notes.json'))) {
+            const data = fs.readFileSync(path.join(__dirname, '../notes.json'), 'utf8');
             notes = JSON.parse(data);
             console.log('Notes loaded successfully.');
         } else {
@@ -37,52 +23,34 @@ const loadNotes = () => {
 // Save notes to file
 const saveNotes = () => {
     try {
-        fs.writeFileSync('notes.json', JSON.stringify(notes, null, 2)); // Save notes with pretty formatting
+        fs.writeFileSync(path.join(__dirname, '../notes.json'), JSON.stringify(notes, null, 2));
         console.log('Notes saved successfully.');
     } catch (error) {
         console.error('Error saving notes file:', error);
     }
 };
 
-// Emit notes to all clients when they connect
-io.on('connection', (socket) => {
-    console.log('New user connected:', socket.id);
-    
-    // Send existing notes to the new client
-    socket.emit('loadNotes', notes);
-
-    // Listen for note updates
-    socket.on('noteUpdate', (data) => {
-        const { noteId, content } = data;
-        notes[noteId] = content; // Update the note in memory
-        saveNotes(); // Save the notes to file
-        console.log(`Note updated: ${noteId}`);
-        socket.broadcast.emit('noteUpdate', data); // Broadcast the update to other clients
-    });
-
-    // Listen for delete notepad requests
-    socket.on('deleteNotepad', (noteId) => {
+// Create and export the serverless function
+export default function handler(req, res) {
+    if (req.method === 'GET') {
+        loadNotes();
+        res.status(200).json(notes);
+    } else if (req.method === 'POST') {
+        const { noteId, content } = req.body;
+        notes[noteId] = content;
+        saveNotes();
+        res.status(200).json({ message: 'Note updated', noteId });
+    } else if (req.method === 'DELETE') {
+        const { noteId } = req.body;
         if (notes[noteId]) {
-            delete notes[noteId]; // Remove the note from memory
-            saveNotes(); // Save the updated notes to file
-            console.log(`Note deleted: ${noteId}`);
-            socket.broadcast.emit('noteDelete', noteId); // Notify other clients
+            delete notes[noteId];
+            saveNotes();
+            res.status(200).json({ message: 'Note deleted', noteId });
         } else {
-            console.log(`Note not found: ${noteId}`);
+            res.status(404).json({ message: 'Note not found' });
         }
-    });
-
-    // Handle client disconnect
-    socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.id}`);
-    });
-});
-
-// Load notes on server start
-loadNotes();
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+    } else {
+        res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+        res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+}
