@@ -1,73 +1,49 @@
-// app.js
-// Connect to the server using Socket.IO
-const socket = io('https://livenotepad1.vercel.app'); // Change this to your deployed app URL
+const socket = io(); // If you still want to use Socket.IO, but this is optional.
 
-// Get the container where notepads will be rendered
-const notepadContainer = document.getElementById('notepad-container');
-const addNotepadBtn = document.getElementById('addNotepad');
-
-// Listen for the initial set of notepads from the server
-socket.on('loadNotes', (notepads) => {
-    renderNotepads(notepads);
-});
-
-// Listen for updates to the notepads (new, deleted, or updated)
-socket.on('noteUpdate', ({ noteId, content }) => {
-    const notepad = document.getElementById(noteId);
-    if (notepad) {
-        notepad.value = content; // Update the content of the notepad
-    }
-});
-
-// Listen for deleted notepad events
-socket.on('noteDelete', (noteId) => {
-    const notepadDiv = document.getElementById(noteId)?.parentElement;
-    if (notepadDiv) {
-        notepadContainer.removeChild(notepadDiv); // Remove the notepad element from the DOM
-    }
-});
-
-// Add a new notepad
-addNotepadBtn.addEventListener('click', () => {
-    const newNoteId = `note${Date.now()}`; // Create a unique ID for the new notepad
-    const content = ''; // Empty content for the new notepad
-    notes[newNoteId] = content; // Add the new note to the notes object
-    socket.emit('noteUpdate', { noteId: newNoteId, content }); // Emit the event to add a new notepad
-});
-
-// Render notepads dynamically
-function renderNotepads(notepads) {
-    notepadContainer.innerHTML = ''; // Clear current notepads
-
-    for (const noteId in notepads) {
-        const notepadDiv = document.createElement('div');
-        notepadDiv.classList.add('notepad-wrapper');
-        notepadDiv.id = noteId; // Set the ID for the notepad container
-
-        // Create a textarea for the notepad
-        const textarea = document.createElement('textarea');
-        textarea.id = noteId;
-        textarea.value = notepads[noteId];
-
-        // Emit the updated content when typing
-        textarea.addEventListener('input', () => {
-            const content = textarea.value;
-            socket.emit('noteUpdate', { noteId, content });
-        });
-
-        // Create a delete button for the notepad
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'X';
-        deleteBtn.classList.add('delete-btn');
-        deleteBtn.addEventListener('click', () => {
-            socket.emit('deleteNotepad', noteId); // Emit delete event
-        });
-
-        // Append the textarea and delete button to the notepad div
-        notepadDiv.appendChild(textarea);
-        notepadDiv.appendChild(deleteBtn);
-
-        // Append the notepad div to the container
-        notepadContainer.appendChild(notepadDiv);
+async function fetchNotes() {
+    const response = await fetch('/api/notepad');
+    if (response.ok) {
+        const data = await response.json();
+        console.log('Fetched notes:', data);
+        // Populate your frontend with the notes here
+    } else {
+        console.error('Error fetching notes:', response.status);
     }
 }
+
+async function updateNote(noteId, content) {
+    const response = await fetch('/api/notepad', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ noteId, content }),
+    });
+
+    if (response.ok) {
+        console.log('Note updated');
+        fetchNotes(); // Optionally refresh notes after update
+    } else {
+        console.error('Error updating note:', response.status);
+    }
+}
+
+async function deleteNotepad(noteId) {
+    const response = await fetch('/api/notepad', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ noteId }),
+    });
+
+    if (response.ok) {
+        console.log('Note deleted');
+        fetchNotes(); // Optionally refresh notes after deletion
+    } else {
+        console.error('Error deleting note:', response.status);
+    }
+}
+
+// Call this to load notes on page load
+fetchNotes();
