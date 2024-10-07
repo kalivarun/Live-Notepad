@@ -8,6 +8,10 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+const cors = require('cors');
+
+// Add this line before your app.use() calls
+app.use(cors({ origin: 'https://livenotepad1.vercel.app' }));
 
 // Initialize notes as an empty object
 let notes = {};
