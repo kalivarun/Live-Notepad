@@ -1,6 +1,6 @@
 // app.js
 // Connect to the server using Socket.IO
-const socket = io();
+const socket = io('https://livenotepad1.vercel.app'); // Change this to your deployed app URL
 
 // Get the container where notepads will be rendered
 const notepadContainer = document.getElementById('notepad-container');
