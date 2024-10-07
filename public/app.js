@@ -12,7 +12,7 @@ async function fetchNotes() {
 }
 
 async function updateNote(noteId, content) {
-    const response = await fetch('/api/notepad', {
+    const response = await fetch('/api/server', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
