@@ -1,3 +1,3 @@
 # Live-Notepad
 Live Notepad
-![cd(change directory)](Screenshot 2024-10-08 023657.png)
+![cd(change directory)](https://github.com/kalivarun/Live-Notepad/blob/main/Screenshot%202024-10-08%20023657.png?raw=true)
